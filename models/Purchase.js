@@ -1,3 +1,4 @@
+// backend/models/Purchase.js (Updated)
 const mongoose = require('mongoose');
 
 const purchaseSchema = new mongoose.Schema({
@@ -8,6 +9,8 @@ const purchaseSchema = new mongoose.Schema({
   productImage: { type: String, required: true },
   productPrice: { type: Number, required: true },
   quantity: { type: Number, required: true, default: 1 },
+  subtotal: { type: Number, required: true },
+  vat: { type: Number, required: true, default: 0 },
   total: { type: Number, required: true },
   status: { type: String, enum: ['pending', 'completed'], default: 'completed' },
   createdAt: { type: Date, default: Date.now }

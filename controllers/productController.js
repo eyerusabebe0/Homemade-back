@@ -1,4 +1,6 @@
+// backend/controllers/productController.js (Updated)
 const Product = require('../models/Product');
+const Purchase = require('../models/Purchase');
 
 const createProduct = async (req, res) => {
   try {
@@ -6,7 +8,8 @@ const createProduct = async (req, res) => {
       ...req.body,
       ownerId: req.user.id,
       ownerName: req.user.name,
-      status: 'pending'
+      status: 'pending',
+      paymentReceived: false
     });
 
     await product.save();
@@ -20,6 +23,7 @@ const getProducts = async (req, res) => {
   try {
     const products = await Product.find({ 
       status: 'approved',
+      paymentReceived: true,
       deletedAt: null 
     }).sort({ createdAt: -1 });
     res.json({ success: true, products });
@@ -78,6 +82,10 @@ const updateProduct = async (req, res) => {
 
     Object.assign(product, req.body);
     product.updatedAt = new Date();
+    if (product.status === 'approved') {
+      product.status = 'pending';
+      product.paymentReceived = false;
+    }
     await product.save();
 
     res.json({ success: true, product });
@@ -107,6 +115,27 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const payCommission = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    if (product.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    product.paymentReceived = true;
+    await product.save();
+    
+    res.json({ success: true, message: 'Commission paid successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -114,5 +143,6 @@ module.exports = {
   getMyProducts,
   getProductById,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  payCommission
 };

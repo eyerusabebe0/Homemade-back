@@ -1,12 +1,13 @@
+// backend/controllers/purchaseController.js (Updated)
 const Purchase = require('../models/Purchase');
 const Product = require('../models/Product');
 
 const createPurchase = async (req, res) => {
   try {
-    const { productId, quantity, total } = req.body;
+    const { productId, quantity, subtotal, vat, total } = req.body;
     
     const product = await Product.findById(productId);
-    if (!product || product.status !== 'approved') {
+    if (!product || product.status !== 'approved' || !product.paymentReceived) {
       return res.status(404).json({ message: 'Product not available' });
     }
     
@@ -18,7 +19,9 @@ const createPurchase = async (req, res) => {
       productImage: product.image,
       productPrice: product.price,
       quantity,
-      total
+      subtotal: subtotal || product.price * quantity,
+      vat: vat || (product.price * quantity * 0.03),
+      total: total || (product.price * quantity * 1.03)
     });
     
     await purchase.save();

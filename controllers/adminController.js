@@ -1,3 +1,4 @@
+// backend/controllers/adminController.js (Updated)
 const Product = require('../models/Product');
 const User = require('../models/User');
 const Purchase = require('../models/Purchase');
@@ -10,11 +11,17 @@ const approveProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
     
+    const commission = product.price * 0.01;
     product.status = 'approved';
+    product.paymentReceived = false;
     product.updatedAt = new Date();
     await product.save();
     
-    res.json({ success: true, product });
+    res.json({ 
+      success: true, 
+      product,
+      message: `Product approved. Commission to collect: ${commission} ETB`
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -33,6 +40,23 @@ const rejectProduct = async (req, res) => {
     await product.save();
     
     res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const markPaymentReceived = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    product.paymentReceived = true;
+    await product.save();
+    
+    res.json({ success: true, message: 'Payment marked as received' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -65,7 +89,7 @@ const getDashboardStats = async (req, res) => {
     const totalPurchases = await Purchase.countDocuments();
     
     const purchases = await Purchase.find();
-    const totalRevenue = purchases.reduce((sum, p) => sum + p.total, 0);
+    const totalRevenue = purchases.reduce((sum, p) => sum + (p.total || 0), 0);
     
     res.json({
       success: true,
@@ -86,6 +110,7 @@ const getDashboardStats = async (req, res) => {
 module.exports = {
   approveProduct,
   rejectProduct,
+  markPaymentReceived,
   getAllUsers,
   getAllPurchases,
   getDashboardStats
